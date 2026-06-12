@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ─────────────────────────────────────────────────────────── */
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --border: #334155;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-family: 'Inter', 'SF Pro Text', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Custom scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ── Scrollbar hide util ───────────────────────────────────────────── */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ── Prose dark overrides ──────────────────────────────────────────── */
+.prose pre {
+  @apply bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-x-auto;
+}
+.prose code {
+  @apply font-mono;
+}
+.prose table {
+  @apply w-full;
+}
+.prose th {
+  @apply bg-slate-800/60;
+}
+
+/* ── Animations ───────────────────────────────────────────────────── */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
