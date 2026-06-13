@@ -1,9 +1,7 @@
 import { create } from "zustand";
-import type { NmapScanResult, ScanAnalysis, ScanStatus, ChatMessage } from "@/types";
+import type { NmapScanResult, ScanAnalysis, ScanStatus, ChatMessage, AIProvider } from "@/types";
 import { nanoid } from "@/lib/utils";
-
 interface ScanStore {
-  // Current scan state
   currentScanId: string | null;
   currentScan: NmapScanResult | null;
   currentAnalysis: ScanAnalysis | null;
@@ -12,12 +10,21 @@ interface ScanStore {
   isAnalyzing: boolean;
   activeTab: "raw" | "analysis" | "recommendations" | "report" | "download";
 
-  // Chat state
   chatMessages: ChatMessage[];
   chatSessionId: string | null;
   isChatLoading: boolean;
 
-  // Scan history
+  // AI Provider
+  activeProvider: AIProvider;
+  defaultProvider: AIProvider;
+  providerAvailability: {
+    gemini: "unknown" | "ok" | "error";
+    slm: "unknown" | "ok" | "error";
+  };
+  setActiveProvider: (p: AIProvider) => void;
+  setDefaultProvider: (p: AIProvider) => void;
+  setProviderAvailability: (p: AIProvider, status: "unknown" | "ok" | "error") => void;
+
   scanHistory: Array<{
     scan_id: string;
     command: string;
@@ -26,11 +33,9 @@ interface ScanStore {
     hosts_count: number;
   }>;
 
-  // AI/Ollama status
   ollamaStatus: "unknown" | "ok" | "error";
   ollamaModels: string[];
 
-  // Actions
   setScanStarted: (scanId: string) => void;
   addProgressLine: (line: string) => void;
   setScanComplete: (scan: NmapScanResult) => void;
@@ -50,7 +55,7 @@ interface ScanStore {
   setOllamaStatus: (status: "unknown" | "ok" | "error", models?: string[]) => void;
 }
 
-export const useScanStore = create<ScanStore>((set, get) => ({
+export const useScanStore = create<ScanStore>((set) => ({
   currentScanId: null,
   currentScan: null,
   currentAnalysis: null,
@@ -63,58 +68,41 @@ export const useScanStore = create<ScanStore>((set, get) => ({
   chatSessionId: null,
   isChatLoading: false,
 
+  activeProvider: "gemini",
+  defaultProvider: "gemini",
+  providerAvailability: { gemini: "unknown", slm: "unknown" },
+  setActiveProvider: (p) => set({ activeProvider: p }),
+  setDefaultProvider: (p) => set({ defaultProvider: p, activeProvider: p }),
+  setProviderAvailability: (p, status) =>
+    set((s) => ({ providerAvailability: { ...s.providerAvailability, [p]: status } })),
+
   scanHistory: [],
   ollamaStatus: "unknown",
   ollamaModels: [],
 
   setScanStarted: (scanId) =>
-    set({
-      currentScanId: scanId,
-      scanStatus: "running",
-      progressLines: [],
-      currentScan: null,
-      currentAnalysis: null,
-      activeTab: "raw",
-    }),
+    set({ currentScanId: scanId, scanStatus: "running", progressLines: [], currentScan: null, currentAnalysis: null, activeTab: "raw" }),
 
   addProgressLine: (line) =>
-    set((s) => ({
-      progressLines: [...s.progressLines.slice(-200), line], // keep last 200 lines
-    })),
+    set((s) => ({ progressLines: [...s.progressLines.slice(-200), line] })),
 
   setScanComplete: (scan) =>
-    set({
-      currentScan: scan,
-      scanStatus: "completed",
-      activeTab: "raw",
-    }),
+    set({ currentScan: scan, scanStatus: "completed", activeTab: "raw" }),
 
-  setScanFailed: (error) =>
-    set({ scanStatus: "failed" }),
+  setScanFailed: (_) => set({ scanStatus: "failed" }),
 
   setScanAnalysis: (analysis) =>
     set({ currentAnalysis: analysis, isAnalyzing: false, activeTab: "analysis" }),
 
   setIsAnalyzing: (v) => set({ isAnalyzing: v }),
-
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   clearCurrentScan: () =>
-    set({
-      currentScanId: null,
-      currentScan: null,
-      currentAnalysis: null,
-      scanStatus: null,
-      progressLines: [],
-      isAnalyzing: false,
-      activeTab: "raw",
-    }),
+    set({ currentScanId: null, currentScan: null, currentAnalysis: null, scanStatus: null, progressLines: [], isAnalyzing: false, activeTab: "raw" }),
 
   addChatMessage: (msg) => {
     const id = nanoid();
-    set((s) => ({
-      chatMessages: [...s.chatMessages, { ...msg, id }],
-    }));
+    set((s) => ({ chatMessages: [...s.chatMessages, { ...msg, id }] }));
     return id;
   },
 
@@ -126,13 +114,8 @@ export const useScanStore = create<ScanStore>((set, get) => ({
     })),
 
   clearChatHistory: () => set({ chatMessages: [], chatSessionId: null }),
-
   setChatSessionId: (id) => set({ chatSessionId: id }),
-
   setIsChatLoading: (v) => set({ isChatLoading: v }),
-
   setScanHistory: (history) => set({ scanHistory: history }),
-
-  setOllamaStatus: (status, models = []) =>
-    set({ ollamaStatus: status, ollamaModels: models }),
+  setOllamaStatus: (status, models = []) => set({ ollamaStatus: status, ollamaModels: models }),
 }));

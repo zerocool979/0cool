@@ -114,6 +114,51 @@ export interface ChatSession {
   messages: ChatMessage[];
 }
 
+// ===== AI Provider =====
+
+export type AIProvider = "gemini" | "slm";
+
+export interface ProviderInfo {
+  id: AIProvider;
+  name: string;
+  model: string;
+  requires_internet: boolean;
+  requires_api_key: boolean;
+  api_key_set?: boolean;
+  ollama_url?: string;
+}
+
+export interface ProvidersResponse {
+  default: AIProvider;
+  available: ProviderInfo[];
+}
+
+export const PROVIDER_CONFIG: Record<AIProvider, {
+  label: string;
+  icon: string;
+  color: string;
+  bg: string;
+  border: string;
+  badge: string;
+}> = {
+  gemini: {
+    label: "Gemini",
+    icon: "✦",
+    color: "text-blue-400",
+    bg: "bg-blue-950/40",
+    border: "border-blue-800/60",
+    badge: "Gemini AI",
+  },
+  slm: {
+    label: "SLM (Offline)",
+    icon: "⚡",
+    color: "text-violet-400",
+    bg: "bg-violet-950/40",
+    border: "border-violet-800/60",
+    badge: "Local SLM",
+  },
+};
+
 // ===== API Request/Response Models =====
 
 export interface ScanRequest {
@@ -140,6 +185,7 @@ export interface ChatRequest {
   session_id?: string;
   context?: string;
   scan_id?: string;
+  provider?: AIProvider;
 }
 
 // ===== WebSocket Event Types =====

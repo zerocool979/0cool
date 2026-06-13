@@ -8,7 +8,7 @@ from app.models.nmap_models import (
     ScanRequest, ScanResponse, ScanStatusResponse, ScanStatus
 )
 from app.models.report_models import ExportFormat, ReportRequest
-from app.services import nmap_service, ollama_service, report_service
+from app.services import nmap_service, ai_provider, report_service
 from app.core.exceptions import InvalidCommandError, NmapSLMException
 
 logger = logging.getLogger(__name__)
@@ -58,8 +58,8 @@ async def get_scan_status(scan_id: str):
 
 
 @router.post("/scan/{scan_id}/analyze")
-async def analyze_scan(scan_id: str):
-    """Trigger AI analysis for a completed scan."""
+async def analyze_scan(scan_id: str, provider: str | None = None):
+    """Trigger AI analysis for a completed scan. ?provider=gemini|slm"""
     scan = nmap_service.get_scan(scan_id)
     if not scan:
         raise HTTPException(status_code=404, detail=f"Scan {scan_id} tidak ditemukan")
@@ -71,7 +71,7 @@ async def analyze_scan(scan_id: str):
         )
 
     try:
-        analysis = await ollama_service.analyze_scan_result(scan)
+        analysis = await ai_provider.analyze_scan_result(scan, provider)
         return analysis
     except Exception as e:
         logger.error(f"Analysis failed: {e}", exc_info=True)
@@ -108,7 +108,7 @@ async def generate_report(scan_id: str, request: ReportRequest):
     analysis = None
     if request.include_analysis:
         try:
-            analysis = await ollama_service.analyze_scan_result(scan)
+            analysis = await ai_provider.analyze_scan_result(scan)
         except Exception as e:
             logger.warning(f"Could not generate analysis for report: {e}")
 

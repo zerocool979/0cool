@@ -6,7 +6,7 @@ from typing import Set
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.services import nmap_service, ollama_service
+from app.services import nmap_service, ai_provider
 from app.models.nmap_models import ScanStatus, ScanRequest
 from app.core.exceptions import InvalidCommandError
 
@@ -105,7 +105,7 @@ async def websocket_scan(websocket: WebSocket):
                                 "message": "Menganalisis hasil scan dengan AI..."
                             })
                             try:
-                                analysis = await ollama_service.analyze_scan_result(scan)
+                                analysis = await ai_provider.analyze_scan_result(scan)
                                 await manager.send(websocket, {
                                     "type": "analysis_complete",
                                     "scan_id": scan_id,
@@ -180,12 +180,14 @@ async def websocket_chat(websocket: WebSocket):
                     "session_id": session_id
                 })
 
-                # Stream AI response
+                # Stream AI response — provider from client, or server default
+                provider = data.get("provider")
                 full_response = ""
-                async for chunk in ollama_service.stream_chat(
+                async for chunk in ai_provider.stream_chat(
                     message,
                     session_id,
-                    data.get("context")
+                    data.get("context"),
+                    provider,
                 ):
                     full_response += chunk
                     await manager.send(websocket, {

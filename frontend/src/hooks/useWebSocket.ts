@@ -185,7 +185,7 @@ export function useChatWebSocket() {
     };
   }, []);
 
-  const sendMessage = useCallback((content: string, context?: string) => {
+  const sendMessage = useCallback((content: string, context?: string, provider?: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       return false;
     }
@@ -194,7 +194,7 @@ export function useChatWebSocket() {
       content,
       timestamp: new Date().toISOString(),
     });
-    wsRef.current.send(JSON.stringify({ type: "message", content, context }));
+    wsRef.current.send(JSON.stringify({ type: "message", content, context, provider }));
     return true;
   }, [addChatMessage]);
 

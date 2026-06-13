@@ -30,24 +30,30 @@ async def lifespan(app: FastAPI):
     Path(settings.REPORTS_DIR).mkdir(parents=True, exist_ok=True)
     logger.info(f"📁 Reports directory: {settings.REPORTS_DIR}")
 
-    # Check Ollama availability
+    # Check AI Providers
+    from app.services.gemini_service import check_gemini_health
     from app.services.ollama_service import check_ollama_health
-    health = await check_ollama_health()
-    if health["status"] == "ok":
-        logger.info(f"✅ Ollama connected. Available models: {health.get('models', [])}")
-        if not health.get("model_available"):
-            logger.warning(
-                f"⚠️  Model '{settings.OLLAMA_MODEL}' not found. "
-                f"Run: ollama pull {settings.OLLAMA_MODEL}"
-            )
+
+    gemini_h = await check_gemini_health()
+    ollama_h = await check_ollama_health()
+
+    if gemini_h["status"] == "ok":
+        logger.info(f"✅ Gemini API terhubung — model: {settings.GEMINI_MODEL}")
     else:
-        logger.warning("⚠️  Ollama not available. AI features will be limited.")
+        logger.warning(f"⚠️  Gemini tidak tersedia: {gemini_h.get('message', '')}")
+        logger.warning("   → Tambahkan GEMINI_API_KEY di backend/.env")
+
+    if ollama_h["status"] == "ok":
+        logger.info(f"✅ Ollama terhubung — model: {settings.OLLAMA_MODEL}")
+    else:
+        logger.warning(f"⚠️  Ollama tidak tersedia: {ollama_h.get('message', '')}")
+
+    logger.info(f"🤖 Default AI provider: {settings.DEFAULT_AI_PROVIDER.upper()}")
 
     yield
 
     # Shutdown
     logger.info("👋 Shutting down NmapSLM...")
-
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -56,10 +62,10 @@ app = FastAPI(
 ## NmapSLM - Network Scanner with AI Analysis
 
 Aplikasi terintegrasi untuk:
-- 🔍 **Network Scanning** dengan Nmap
-- 🤖 **AI Analysis** menggunakan Ollama (100% offline)
-- 📊 **Risk Assessment** otomatis
-- 📄 **Report Generation** (PDF, Markdown, JSON)
+- **Network Scanning** dengan Nmap
+- **Hybrid AI Analysis** menggunakan Gemini / Ollama
+- **Risk Assessment** otomatis
+- **Report Generation** (PDF, Markdown, JSON)
 
 ### Peringatan Hukum
 Scanning jaringan tanpa izin melanggar UU ITE Pasal 30. 
@@ -115,14 +121,13 @@ async def root():
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    from app.services.ollama_service import check_ollama_health
-    ollama = await check_ollama_health()
+    from app.services.ai_provider import health as ai_health
+    providers = await ai_health()
     return {
         "status": "ok",
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "ollama": ollama,
-        "model": settings.OLLAMA_MODEL,
+        **providers,
     }
 
 

@@ -118,7 +118,6 @@ export const chatApi = {
     }),
 
   streamMessage: (req: ChatRequest): EventSource => {
-    // Use fetch with ReadableStream for SSE
     return new EventSource(
       `${BASE_URL}/chat/stream?` + new URLSearchParams({ message: req.message })
     );
@@ -130,9 +129,14 @@ export const chatApi = {
     }),
 
   checkHealth: () =>
-    request<{ status: string; models: string[]; model_available: boolean }>(
-      "/chat/health"
-    ),
+    request<{
+      default_provider: string;
+      gemini: { status: string; model?: string };
+      slm: { status: string; models?: string[] };
+    }>("/chat/health"),
+
+  listProviders: () =>
+    request<import("@/types").ProvidersResponse>("/chat/providers"),
 };
 
 // ===== Health API =====
@@ -153,7 +157,7 @@ export async function* streamChatResponse(
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
+    body: JSON.stringify(req),   // provider field included automatically
   });
 
   if (!res.ok || !res.body) {

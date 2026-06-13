@@ -21,6 +21,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     context: Optional[str] = None
     scan_id: Optional[str] = None
+    provider: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
